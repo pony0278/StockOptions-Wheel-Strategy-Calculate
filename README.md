@@ -26,7 +26,7 @@ You don't need to install anything. This is a client-side application.
 
 本專案無需安裝，純前端運行。
 
-### Method : Open Directly (方法一：直接開啟)
+### Method : 
 1. Download the `index.html` file.
 2. Open it in any modern browser (Chrome, Edge, Safari).
 
