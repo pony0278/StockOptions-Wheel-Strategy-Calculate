@@ -1,7 +1,7 @@
 # 📈 Wheel Strategy Calculator (期權輪動策略計算器)
 
 A professional, single-page web application designed for options traders to calculate, track, and analyze the performance of **The Wheel Strategy**.
-[🔗 Demo](https://pony0278.github.io/StockOptions-Wheel-Strategy-Calculate/)
+## 🚀 Demo  → https://pony0278.github.io/StockOptions-Wheel-Strategy-Calculate/
 
 這是一個專為期權交易者設計的單頁式 Web 應用程式，用於計算、追蹤並分析 **Wheel Strategy (輪動策略)** 的績效與損益。
 
