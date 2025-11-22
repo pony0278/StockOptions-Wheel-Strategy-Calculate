@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wheel Strategy Ultra Calculator</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #e2e8f0;
+            --input-bg: #334155;
+            --input-border: #475569;
+            --primary-color: #3b82f6;
+            --primary-hover: #2563eb;
+            --success-color: #4ade80;
+            --danger-color: #f87171;
+            --warning-color: #facc15;
+            --info-color: #38bdf8;
+            --divider-color: #334155;
+            --muted-text: #94a3b8;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        }
+
+        [data-theme="light"] {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #1e293b;
+            --input-bg: #ffffff;
+            --input-border: #cbd5e1;
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success-color: #16a34a;
+            --danger-color: #dc2626;
+            --warning-color: #d97706;
+            --info-color: #0ea5e9;
+            --divider-color: #e2e8f0;
+            --muted-text: #64748b;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+            transition: all 0.3s;
+        }
+
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--divider-color);
+            padding-bottom: 15px;
+        }
+
+        h1 { margin: 0; font-size: 1.5rem; }
+
+        .controls { display: flex; gap: 10px; }
+        .btn-toggle {
+            background: var(--input-bg);
+            color: var(--text-color);
+            border: 1px solid var(--input-border);
+            padding: 5px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .btn-toggle:hover { border-color: var(--primary-color); }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-top: 25px;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .grid-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-group { display: flex; flex-direction: column; }
+        label { font-size: 0.9rem; margin-bottom: 5px; font-weight: 500; }
+        
+        input, select {
+            padding: 10px;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        input:focus, select:focus { outline: none; border-color: var(--primary-color); }
+
+        .divider { height: 1px; background-color: var(--divider-color); margin: 25px 0; }
+        .note { font-size: 0.85rem; color: var(--muted-text); margin-top: 5px; }
+
+        .btn-calc {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        .btn-calc:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
+
+        /* Results */
+        .result-card {
+            background-color: var(--input-bg);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border: 1px solid var(--input-border);
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 1rem;
+            align-items: center;
+        }
+
+        .result-row.total {
+            font-size: 1.3rem;
+            font-weight: bold;
+            border-top: 1px dashed var(--divider-color);
+            padding-top: 15px;
+            margin-top: 15px;
+        }
+
+        .profit { color: var(--success-color); }
+        .loss { color: var(--danger-color); }
+        .neutral { color: var(--warning-color); font-weight: bold; }
+        .highlight-box {
+            background: rgba(59, 130, 246, 0.15);
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: var(--info-color);
+            font-weight: bold;
+        }
+        
+        .benchmark-box {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: rgba(255,255,255,0.03);
+            border-left: 4px solid var(--warning-color);
+            border-radius: 4px;
+        }
+        .benchmark-title {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: var(--muted-text);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-row">
+        <h1 data-i18n="appTitle">Wheel Strategy Ultra</h1>
+        <div class="controls">
+            <button class="btn-toggle" onclick="toggleTheme()" id="themeBtn">🌞 Light</button>
+            <button class="btn-toggle" onclick="toggleLang()" id="langBtn">中文</button>
+        </div>
+    </div>
+
+    <div class="section-title" data-i18n="secPut">1. Capital & Sell Put</div>
+    <div class="grid-row">
+        <div class="form-group">
+            <label data-i18n="lblInitCap">Initial Capital (USD)</label>
+            <input type="number" id="initialCapital" class="save-input" value="10000">
+        </div>
+    </div>
+
+<div class="grid-row">
+        <div class="form-group">
+            <label data-i18n="lblPutStrike">Put Strike Price</label>
+            <input type="number" id="putStrike" class="save-input" value="50" step="0.1">
+        </div>
+        <div class="form-group">
+            <label data-i18n="lblPutPrem">Put Premium</label>
+            <input type="number" id="putPremium" class="save-input" value="1.5" step="0.01">
+        </div>
+        <div class="form-group">
+            <label data-i18n="lblPutQty">Put Contracts</label>
+            <input type="number" id="putQty" class="save-input" value="1">
+        </div>
+        <div class="form-group">
+            <label data-i18n="lblPutDays">Put Duration (Days)</label>
+            <input type="number" id="putDays" class="save-input" value="7" placeholder="e.g. 7">
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section-title" data-i18n="secCall">2. Assignment & Covered Call</div>
+    <p class="note" data-i18n="noteAssigned">* Only fill if assigned.</p>
+    
+    <div class="grid-row">
+        <div class="form-group">
+            <label data-i18n="lblCallStrike">Call Strike Price</label>
+            <input type="number" id="callStrike" class="save-input" value="55" step="0.1">
+        </div>
+        <div class="form-group">
+            <label data-i18n="lblCallPrem">Call Premium</label>
+            <input type="number" id="callPremium" class="save-input" value="0.8" step="0.01">
+        </div>
+         <div class="form-group">
+            <label data-i18n="lblCallDays">Call/Hold Duration (Days)</label>
+            <input type="number" id="callDays" class="save-input" value="0" placeholder="e.g. 7">
+        </div>
+    </div>
+    <div class="grid-row">
+        <div class="form-group">
+            <label data-i18n="lblCallQty">Call Contracts</label>
+            <input type="number" id="callQty" class="save-input" value="1">
+        </div>
+        <div class="form-group">
+            <label data-i18n="lblDividend">Dividends Collected</label>
+            <input type="number" id="dividends" class="save-input" value="0" step="0.01" placeholder="Total Cash">
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section-title" data-i18n="secFinal">3. Settlement</div>
+    <div class="grid-row">
+        <div class="form-group">
+            <label data-i18n="lblIsCalled">Is Stock Called Away?</label>
+            <select id="isCalledAway" class="save-input" onchange="togglePriceInput()">
+                <option value="yes" data-i18n="optYes">Yes (Sold)</option>
+                <option value="no" data-i18n="optNo">No (Holding)</option>
+            </select>
+        </div>
+        <div class="form-group" id="finalPriceGroup" style="display:none;">
+            <label data-i18n="lblCurrPrice">Current Stock Price</label>
+            <input type="number" id="currentPrice" class="save-input" value="52" step="0.1">
+        </div>
+    </div>
+
+    <button class="btn-calc" onclick="calculate()" data-i18n="btnCalc">Analyze Performance</button>
+
+    <div class="result-card" id="resultSection" style="display:none;">
+        
+        <div class="result-row">
+            <span data-i18n="resBreakeven">Breakeven Price:</span>
+            <span id="resBreakeven" class="neutral">$0</span>
+        </div>
+        <div class="result-row">
+            <span data-i18n="resSafety">Downside Protection:</span>
+            <span id="resSafety" class="highlight-box">0%</span>
+        </div>
+
+        <div class="divider" style="margin: 15px 0;"></div>
+
+        <div class="result-row">
+            <span data-i18n="resPremium">Total Premium:</span>
+            <span id="resPremium" class="profit">+$0</span>
+        </div>
+        <div class="result-row">
+            <span data-i18n="resDividend">Dividends:</span>
+            <span id="resDividend" class="profit">+$0</span>
+        </div>
+        <div class="result-row">
+            <span data-i18n="resStockPnL">Stock Cap Gain/Loss:</span>
+            <span id="resStockPnL">+$0</span>
+        </div>
+
+        <div class="result-row total">
+            <span data-i18n="resPnL">Total Wheel Profit:</span>
+            <span id="resTotalPnL">$0</span>
+        </div>
+        
+        <div class="grid-row" style="margin-top: 15px;">
+            <div style="text-align: center;">
+                <div style="font-size: 0.9rem; color:var(--muted-text);" data-i18n="resTotalDays">Total Days</div>
+                <div id="resTotalDays" style="font-size: 1.2rem; font-weight: 500;">0</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 0.9rem; color:var(--muted-text);" data-i18n="resROI">ROI</div>
+                <div id="resROI" class="profit" style="font-size: 1.2rem; font-weight: bold;">0%</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 0.9rem; color:var(--muted-text);" data-i18n="resAnnROI">Annualized</div>
+                <div id="resAnnualized" class="highlight-box" style="font-size: 1.2rem;">0%</div>
+            </div>
+        </div>
+
+        <div class="benchmark-box">
+            <div class="benchmark-title" data-i18n="titleBenchmark">Strategy Comparison (Vs. Buy & Hold)</div>
+            
+            <div class="result-row">
+                <span data-i18n="resBnH">Buy & Hold P&L:</span>
+                <span id="resBnH" style="font-weight:bold;">$0</span>
+            </div>
+            
+            <div class="result-row" style="margin-top:8px; border-top:1px solid rgba(255,255,255,0.1); padding-top:8px;">
+                <span data-i18n="resVerdict">Verdict (Wheel vs Hold):</span>
+                <span id="resVerdict" style="font-weight:bold;">0</span>
+            </div>
+            <p id="verdictText" class="note" style="margin-bottom:0;">...</p>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // 1. Localization
+    const i18n = {
+        en: {
+            appTitle: "Wheel Strategy Ultra",
+            secPut: "1. Capital & Sell Put",
+            lblInitCap: "Initial Capital (USD)",
+            lblPutStrike: "Put Strike",
+            lblPutQty: "Put Contracts (x100)",
+            lblPutPrem: "Put Premium",
+            lblPutDays: "Put Days",
+            secCall: "2. Assignment & Covered Call",
+            noteAssigned: "* Only fill if assigned.",
+            lblCallStrike: "Call Strike",
+            lblCallQty: "Call Contracts (x100)",
+            lblCallPrem: "Call Premium",
+            lblCallDays: "Call/Hold Days",
+            lblDividend: "Total Dividends ($)",
+            secFinal: "3. Settlement",
+            lblIsCalled: "Stock Called Away?",
+            optYes: "Yes (Sold)",
+            optNo: "No (Holding)",
+            lblCurrPrice: "Current Price",
+            btnCalc: "Analyze Performance",
+            resBreakeven: "Breakeven:",
+            resSafety: "Safety Margin:",
+            resPremium: "Total Premiums:",
+            resDividend: "Dividends:",
+            resStockPnL: "Stock Value Change:",
+            resPnL: "Total Net Profit:",
+            resTotalDays: "Days",
+            resROI: "ROI",
+            resAnnROI: "Annualized",
+            titleBenchmark: "Benchmark: Buy & Hold Analysis",
+            resBnH: "Buy & Hold Profit:",
+            resVerdict: "Wheel Performance:",
+            verdictWin: "🎉 Wheel beat Hold!",
+            verdictLose: "📉 Hold was better.",
+            msgWin: "Excellent! The Wheel generated more cashflow than simply holding the stock.",
+            msgLose: "Stock rallied too fast. You made profit, but holding would have made more (Opportunity Cost).",
+            themeBtn: "🌞 Light",
+            langBtn: "中文"
+        },
+        zh: {
+            appTitle: "Wheel 策略旗艦計算器",
+            secPut: "1. 資金與 Sell Put",
+            lblInitCap: "起始資金 (USD)",
+            lblPutStrike: "Put 履約價",
+            lblPutQty: "Put 張數",
+            lblPutPrem: "Put 權利金",
+            lblPutDays: "Put 持有天數",
+            secCall: "2. 行權與 Covered Call",
+            noteAssigned: "* 若 Put 被行權才需填寫",
+            lblCallStrike: "Call 履約價",
+            lblCallQty: "Call 張數",
+            lblCallPrem: "Call 權利金",
+            lblCallDays: "Call/持股 天數",
+            lblDividend: "期間領取股利 ($)",
+            secFinal: "3. 最終結算",
+            lblIsCalled: "股票被 Call 走 (賣出)?",
+            optYes: "是 (股價 > 履約價，已賣出)",
+            optNo: "否 (股價 < 履約價，持股中)",
+            lblCurrPrice: "目前市價",
+            btnCalc: "分析績效",
+            resBreakeven: "損益平衡點:",
+            resSafety: "下跌緩衝 (Safety):",
+            resPremium: "權利金收入:",
+            resDividend: "股利收入:",
+            resStockPnL: "股票價差損益:",
+            resPnL: "Wheel 總淨利:",
+            resTotalDays: "總天數",
+            resROI: "報酬率",
+            resAnnROI: "年化報酬",
+            titleBenchmark: "策略對比：買入持有 (Buy & Hold)",
+            resBnH: "買入持有損益:",
+            resVerdict: "Wheel 表現:",
+            verdictWin: "🎉 Wheel 跑贏大盤!",
+            verdictLose: "📉 直接持股賺更多",
+            msgWin: "太棒了！此策略透過權利金創造了比單純持股更高的現金流。",
+            msgLose: "股價漲太快了。雖然你有賺錢，但如果當初直接買進並持有，利潤會更高 (機會成本)。",
+            themeBtn: "🌙 Dark",
+            langBtn: "English"
+        }
+    };
+
+    let currentLang = 'en';
+
+    // 2. Auto-Save
+    document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll('.save-input').forEach(input => {
+            const savedVal = localStorage.getItem(input.id);
+            if (savedVal !== null) input.value = savedVal;
+            
+            input.addEventListener('change', () => localStorage.setItem(input.id, input.value));
+            input.addEventListener('keyup', () => localStorage.setItem(input.id, input.value));
+        });
+        togglePriceInput();
+    });
+
+    function toggleTheme() {
+        const html = document.documentElement;
+        if (html.getAttribute('data-theme') === 'dark') {
+            html.setAttribute('data-theme', 'light');
+            updateThemeButtonText('light');
+        } else {
+            html.setAttribute('data-theme', 'dark');
+            updateThemeButtonText('dark');
+        }
+    }
+
+    function updateThemeButtonText(theme) {
+        const btn = document.getElementById('themeBtn');
+        btn.innerText = theme === 'light' ? '🌙 Dark' : '🌞 Light';
+    }
+
+    function toggleLang() {
+        currentLang = currentLang === 'en' ? 'zh' : 'en';
+        renderText();
+        if(document.getElementById('resultSection').style.display === 'block') calculate();
+    }
+
+    function renderText() {
+        const t = i18n[currentLang];
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (t[key]) el.innerText = t[key];
+        });
+        document.getElementById('langBtn').innerText = i18n[currentLang].langBtn;
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        updateThemeButtonText(currentTheme);
+    }
+
+    function togglePriceInput() {
+        const val = document.getElementById('isCalledAway').value;
+        const group = document.getElementById('finalPriceGroup');
+        group.style.display = (val === 'no') ? 'flex' : 'none';
+    }
+
+    function calculate() {
+        // --- Inputs ---
+        const initialCapital = parseFloat(document.getElementById('initialCapital').value) || 0;
+        
+        const putStrike = parseFloat(document.getElementById('putStrike').value) || 0;
+        const putQty = parseFloat(document.getElementById('putQty').value) || 0;
+        const putPrem = parseFloat(document.getElementById('putPremium').value) || 0;
+        const putDays = parseFloat(document.getElementById('putDays').value) || 0;
+        
+        const callStrike = parseFloat(document.getElementById('callStrike').value) || 0;
+        const callQty = parseFloat(document.getElementById('callQty').value) || 0;
+        const callPrem = parseFloat(document.getElementById('callPremium').value) || 0;
+        const callDays = parseFloat(document.getElementById('callDays').value) || 0;
+        const dividends = parseFloat(document.getElementById('dividends').value) || 0;
+        
+        const isCalledAway = document.getElementById('isCalledAway').value === 'yes';
+        const userCurrentPrice = parseFloat(document.getElementById('currentPrice').value) || 0;
+
+        // --- Logic: The Wheel ---
+        const totalPremiums = (putQty * putPrem * 100) + (callQty * callPrem * 100);
+        
+        let finalStockPrice = 0;
+        if (isCalledAway) {
+            finalStockPrice = callStrike;
+        } else {
+            finalStockPrice = userCurrentPrice;
+        }
+
+        let stockPnL = 0;
+        // Logic: Assuming Put was assigned, Cost Basis = Put Strike
+        // If not assigned (Put expired), stockPnL is 0 (you don't own stock) - handled by simplistic logic here assuming assignment path for Phase 2
+        // Better logic: If CallQty > 0, we assume stock is held.
+        if (callQty > 0) {
+             if (isCalledAway) {
+                // Sold at Call Strike
+                stockPnL = (callStrike - putStrike) * callQty * 100; 
+            } else {
+                // Holding
+                stockPnL = (userCurrentPrice - putStrike) * putQty * 100;
+            }
+        }
+
+        const wheelTotalProfit = totalPremiums + stockPnL + dividends;
+        
+        // Breakeven & Safety
+        const premPerShare = (putQty > 0) ? (totalPremiums / (putQty * 100)) : 0;
+        const divPerShare = (putQty > 0) ? (dividends / (putQty * 100)) : 0;
+        const breakeven = putStrike - premPerShare - divPerShare;
+        const safetyMargin = (putStrike > 0) ? ((putStrike - breakeven) / putStrike) * 100 : 0;
+
+        // ROI
+        const totalDays = putDays + callDays;
+        const roi = (initialCapital > 0) ? (wheelTotalProfit / initialCapital) * 100 : 0;
+        const annualized = (totalDays > 0) ? (roi / totalDays) * 365 : 0;
+
+        // --- Logic: Benchmark (Buy & Hold) ---
+        // Scenario: Bought shares at Put Strike on Day 1 instead of selling Put
+        // Value = (FinalPrice - PutStrike) * PutQty * 100 + Dividends
+        const bnhProfit = ((finalStockPrice - putStrike) * putQty * 100) + dividends;
+        const wheelOutperformed = wheelTotalProfit > bnhProfit;
+        const diff = wheelTotalProfit - bnhProfit;
+
+        // --- Render ---
+        document.getElementById('resultSection').style.display = 'block';
+
+        // Top Stats
+        document.getElementById('resBreakeven').innerText = `$${breakeven.toFixed(2)}`;
+        document.getElementById('resSafety').innerText = `${safetyMargin.toFixed(2)}%`;
+        
+        // Breakdown
+        document.getElementById('resPremium').innerText = `+$${totalPremiums.toFixed(2)}`;
+        document.getElementById('resDividend').innerText = `+$${dividends.toFixed(2)}`;
+        
+        const stockPnLEl = document.getElementById('resStockPnL');
+        stockPnLEl.innerText = (stockPnL >= 0 ? '+' : '') + `$${stockPnL.toFixed(2)}`;
+        stockPnLEl.className = (stockPnL >= 0) ? 'profit' : 'loss';
+
+        // Grand Total
+        const totalPnLEl = document.getElementById('resTotalPnL');
+        totalPnLEl.innerText = (wheelTotalProfit >= 0 ? '+' : '') + `$${wheelTotalProfit.toFixed(2)}`;
+        totalPnLEl.className = (wheelTotalProfit >= 0) ? 'profit result-row total' : 'loss result-row total';
+
+        // ROI
+        document.getElementById('resTotalDays').innerText = totalDays;
+        
+        const roiEl = document.getElementById('resROI');
+        roiEl.innerText = `${roi.toFixed(2)}%`;
+        roiEl.className = (roi >= 0) ? 'profit' : 'loss';
+
+        document.getElementById('resAnnualized').innerText = `${annualized.toFixed(2)}%`;
+
+        // Benchmark Render
+        const bnhEl = document.getElementById('resBnH');
+        bnhEl.innerText = (bnhProfit >= 0 ? '+' : '') + `$${bnhProfit.toFixed(2)}`;
+        bnhEl.className = (bnhProfit >= 0) ? 'profit' : 'loss';
+
+        const verdictEl = document.getElementById('resVerdict');
+        const verdictText = document.getElementById('verdictText');
+        const t = i18n[currentLang];
+
+        if (wheelOutperformed) {
+            verdictEl.innerText = t.verdictWin + ` (+$${diff.toFixed(2)})`;
+            verdictEl.className = 'profit';
+            verdictText.innerText = t.msgWin;
+        } else {
+            verdictEl.innerText = t.verdictLose + ` (-$${Math.abs(diff).toFixed(2)})`;
+            verdictEl.className = 'loss';
+            verdictText.innerText = t.msgLose;
+        }
+    }
+</script>
+
+</body>
+</html>
