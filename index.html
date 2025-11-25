@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wheel Strategy Calculator</title>
+    <title>Wheel Strategy Pro (With Repair)</title>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -92,6 +92,14 @@
             align-items: center;
             gap: 8px;
         }
+        
+        /* 針對維修區塊的特殊標題樣式 */
+        .section-subtitle {
+            font-size: 0.95rem;
+            color: var(--info-color);
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
 
         .grid-row {
             display: grid;
@@ -99,9 +107,20 @@
             gap: 15px;
             margin-bottom: 15px;
         }
+        
+        /* 讓額外操作的行緊湊一點 */
+        .grid-row.compact {
+            grid-template-columns: 100px 1fr 1fr;
+            align-items: end;
+            gap: 10px;
+            margin-bottom: 10px;
+            background: rgba(255,255,255,0.03);
+            padding: 10px;
+            border-radius: 6px;
+        }
 
         .form-group { display: flex; flex-direction: column; }
-        label { font-size: 0.9rem; margin-bottom: 5px; font-weight: 500; }
+        label { font-size: 0.9rem; margin-bottom: 5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         
         input, select {
             padding: 10px;
@@ -110,6 +129,8 @@
             border: 1px solid var(--input-border);
             border-radius: 6px;
             font-size: 1rem;
+            width: 100%;
+            box-sizing: border-box;
         }
         input:focus, select:focus { outline: none; border-color: var(--primary-color); }
 
@@ -204,7 +225,7 @@
         </div>
     </div>
 
-<div class="grid-row">
+    <div class="grid-row">
         <div class="form-group">
             <label data-i18n="lblPutStrike">Put Strike Price</label>
             <input type="number" id="putStrike" class="save-input" value="50" step="0.1">
@@ -238,7 +259,7 @@
             <input type="number" id="callPremium" class="save-input" value="0.8" step="0.01">
         </div>
          <div class="form-group">
-            <label data-i18n="lblCallDays">Call/Hold Duration (Days)</label>
+            <label data-i18n="lblCallDays">Call Duration (Days)</label>
             <input type="number" id="callDays" class="save-input" value="0" placeholder="e.g. 7">
         </div>
     </div>
@@ -255,7 +276,47 @@
 
     <div class="divider"></div>
 
-    <div class="section-title" data-i18n="secFinal">3. Settlement</div>
+    <div class="section-title" data-i18n="secAdjust">3. Additional Rolls / Adjustments (Optional)</div>
+    <p class="note" style="margin-bottom: 15px;" data-i18n="noteAdjust">Use this to lower cost basis (Repair Strategy). Assumes same contract quantity.</p>
+
+    <div class="grid-row compact">
+        <div style="font-weight: bold; color: var(--muted-text); padding-bottom: 12px;">Roll #1</div>
+        <div class="form-group">
+            <label data-i18n="lblPrem">Premium</label>
+            <input type="number" id="roll1Prem" class="save-input" placeholder="0.00" step="0.01">
+        </div>
+        <div class="form-group">
+            <label data-i18n="lblDays">Days</label>
+            <input type="number" id="roll1Days" class="save-input" placeholder="0">
+        </div>
+    </div>
+    <div class="grid-row compact">
+        <div style="font-weight: bold; color: var(--muted-text); padding-bottom: 12px;">Roll #2</div>
+        <div class="form-group">
+            <label data-i18n="lblPrem">Premium</label>
+            <input type="number" id="roll2Prem" class="save-input" placeholder="0.00" step="0.01">
+        </div>
+        <div class="form-group">
+            <label data-i18n="lblDays">Days</label>
+            <input type="number" id="roll2Days" class="save-input" placeholder="0">
+        </div>
+    </div>
+    <div class="grid-row compact">
+        <div style="font-weight: bold; color: var(--muted-text); padding-bottom: 12px;">Roll #3</div>
+        <div class="form-group">
+            <label data-i18n="lblPrem">Premium</label>
+            <input type="number" id="roll3Prem" class="save-input" placeholder="0.00" step="0.01">
+        </div>
+        <div class="form-group">
+            <label data-i18n="lblDays">Days</label>
+            <input type="number" id="roll3Days" class="save-input" placeholder="0">
+        </div>
+    </div>
+
+
+    <div class="divider"></div>
+
+    <div class="section-title" data-i18n="secFinal">4. Settlement</div>
     <div class="grid-row">
         <div class="form-group">
             <label data-i18n="lblIsCalled">Is Stock Called Away?</label>
@@ -275,8 +336,8 @@
     <div class="result-card" id="resultSection" style="display:none;">
         
         <div class="result-row">
-            <span data-i18n="resBreakeven">Breakeven Price:</span>
-            <span id="resBreakeven" class="neutral">$0</span>
+            <span data-i18n="resBreakeven">Breakeven Price (Cost Basis):</span>
+            <span id="resBreakeven" class="neutral" style="font-size: 1.1rem;">$0</span>
         </div>
         <div class="result-row">
             <span data-i18n="resSafety">Downside Protection:</span>
@@ -286,7 +347,7 @@
         <div class="divider" style="margin: 15px 0;"></div>
 
         <div class="result-row">
-            <span data-i18n="resPremium">Total Premium:</span>
+            <span data-i18n="resPremium">Total Premium (All):</span>
             <span id="resPremium" class="profit">+$0</span>
         </div>
         <div class="result-row">
@@ -340,7 +401,7 @@
     // 1. Localization
     const i18n = {
         en: {
-            appTitle: "Wheel Strategy Ultra",
+            appTitle: "Wheel Strategy Pro",
             secPut: "1. Capital & Sell Put",
             lblInitCap: "Initial Capital (USD)",
             lblPutStrike: "Put Strike",
@@ -352,17 +413,21 @@
             lblCallStrike: "Call Strike",
             lblCallQty: "Call Contracts (x100)",
             lblCallPrem: "Call Premium",
-            lblCallDays: "Call/Hold Days",
+            lblCallDays: "Call Days",
             lblDividend: "Total Dividends ($)",
-            secFinal: "3. Settlement",
+            secAdjust: "3. Additional Rolls / Repair (Optional)",
+            noteAdjust: "Track extra calls sold to lower your breakeven (Avg Down).",
+            lblPrem: "Premium",
+            lblDays: "Days",
+            secFinal: "4. Settlement",
             lblIsCalled: "Stock Called Away?",
             optYes: "Yes (Sold)",
             optNo: "No (Holding)",
             lblCurrPrice: "Current Price",
             btnCalc: "Analyze Performance",
-            resBreakeven: "Breakeven:",
-            resSafety: "Safety Margin:",
-            resPremium: "Total Premiums:",
+            resBreakeven: "Breakeven Price (Cost Basis):",
+            resSafety: "Downside Protection:",
+            resPremium: "Total Premiums (All):",
             resDividend: "Dividends:",
             resStockPnL: "Stock Value Change:",
             resPnL: "Total Net Profit:",
@@ -392,17 +457,21 @@
             lblCallStrike: "Call 履約價",
             lblCallQty: "Call 張數",
             lblCallPrem: "Call 權利金",
-            lblCallDays: "Call/持股 天數",
+            lblCallDays: "Call 持有天數",
             lblDividend: "期間領取股利 ($)",
-            secFinal: "3. 最終結算",
+            secAdjust: "3. 轉倉 / 救援加賣 (選填)",
+            noteAdjust: "輸入額外賣出的 Call (Rolling) 來降低損益平衡點。",
+            lblPrem: "權利金",
+            lblDays: "天數",
+            secFinal: "4. 最終結算",
             lblIsCalled: "股票被 Call 走 (賣出)?",
             optYes: "是 (股價 > 履約價，已賣出)",
             optNo: "否 (股價 < 履約價，持股中)",
             lblCurrPrice: "目前市價",
             btnCalc: "分析績效",
-            resBreakeven: "損益平衡點:",
+            resBreakeven: "損益平衡點 (持有成本):",
             resSafety: "下跌緩衝 (Safety):",
-            resPremium: "權利金收入:",
+            resPremium: "總權利金收入:",
             resDividend: "股利收入:",
             resStockPnL: "股票價差損益:",
             resPnL: "Wheel 總淨利:",
@@ -488,12 +557,27 @@
         const callPrem = parseFloat(document.getElementById('callPremium').value) || 0;
         const callDays = parseFloat(document.getElementById('callDays').value) || 0;
         const dividends = parseFloat(document.getElementById('dividends').value) || 0;
+
+        // Extra Rolls
+        const roll1Prem = parseFloat(document.getElementById('roll1Prem').value) || 0;
+        const roll1Days = parseFloat(document.getElementById('roll1Days').value) || 0;
+        const roll2Prem = parseFloat(document.getElementById('roll2Prem').value) || 0;
+        const roll2Days = parseFloat(document.getElementById('roll2Days').value) || 0;
+        const roll3Prem = parseFloat(document.getElementById('roll3Prem').value) || 0;
+        const roll3Days = parseFloat(document.getElementById('roll3Days').value) || 0;
         
         const isCalledAway = document.getElementById('isCalledAway').value === 'yes';
         const userCurrentPrice = parseFloat(document.getElementById('currentPrice').value) || 0;
 
         // --- Logic: The Wheel ---
-        const totalPremiums = (putQty * putPrem * 100) + (callQty * callPrem * 100);
+        // Basic Premiums
+        let basePremiums = (putQty * putPrem * 100) + (callQty * callPrem * 100);
+        
+        // Extra Rolls Premium (Assuming same quantity as putQty, i.e. rolling the position)
+        // If user is reducing qty, this is an estimate. But for standard wheel, qty usually matches.
+        let extraPremiums = (roll1Prem + roll2Prem + roll3Prem) * putQty * 100;
+
+        const totalPremiums = basePremiums + extraPremiums;
         
         let finalStockPrice = 0;
         if (isCalledAway) {
@@ -504,8 +588,6 @@
 
         let stockPnL = 0;
         // Logic: Assuming Put was assigned, Cost Basis = Put Strike
-        // If not assigned (Put expired), stockPnL is 0 (you don't own stock) - handled by simplistic logic here assuming assignment path for Phase 2
-        // Better logic: If CallQty > 0, we assume stock is held.
         if (callQty > 0) {
              if (isCalledAway) {
                 // Sold at Call Strike
@@ -525,13 +607,12 @@
         const safetyMargin = (putStrike > 0) ? ((putStrike - breakeven) / putStrike) * 100 : 0;
 
         // ROI
-        const totalDays = putDays + callDays;
+        const totalDays = putDays + callDays + roll1Days + roll2Days + roll3Days;
         const roi = (initialCapital > 0) ? (wheelTotalProfit / initialCapital) * 100 : 0;
         const annualized = (totalDays > 0) ? (roi / totalDays) * 365 : 0;
 
         // --- Logic: Benchmark (Buy & Hold) ---
-        // Scenario: Bought shares at Put Strike on Day 1 instead of selling Put
-        // Value = (FinalPrice - PutStrike) * PutQty * 100 + Dividends
+        // Scenario: Bought shares at Put Strike on Day 1
         const bnhProfit = ((finalStockPrice - putStrike) * putQty * 100) + dividends;
         const wheelOutperformed = wheelTotalProfit > bnhProfit;
         const diff = wheelTotalProfit - bnhProfit;
@@ -587,5 +668,4 @@
 </script>
 
 </body>
-
 </html>
