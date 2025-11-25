@@ -852,7 +852,7 @@
     }
 
 
-    function calculate() {
+function calculate() {
         // --- Inputs ---
         const initialCapital = parseFloat(document.getElementById('initialCapital').value) || 0;
         
@@ -897,7 +897,7 @@
         const userCurrentPrice = parseFloat(document.getElementById('currentPrice').value) || 0;
 
         // --- Logic: Determine Effective Call Strike ---
-        // Logic: The LAST entered roll strike is the current one.
+        // 邏輯：最後一個輸入的轉倉履約價即為最終履約價
         let effectiveCallStrike = callStrike;
         if (roll1Strike > 0) effectiveCallStrike = roll1Strike;
         if (roll2Strike > 0) effectiveCallStrike = roll2Strike;
@@ -905,19 +905,22 @@
 
 
         // --- Logic: The Wheel ---
-        // Gross Premiums (before any close costs)
-        let grossPremiums = (putQty * putPrem * 100) + (callQty * callPrem * 100);
         
-        // Extra Rolls Premium
-        let extraPremiums = (roll1Prem + roll2Prem + roll3Prem) * putQty * 100;
+        // 1. 計算權利金 (Gross Premiums)
+        // Put 部分一定是用 putQty
+        const grossPutPremium = putQty * putPrem * 100;
+        
+        // Call 部分與轉倉部分，建議統一使用 callQty (假設轉倉是針對已賣出的 Call)
+        // 若使用者尚未賣出 Call (callQty 為 0)，則轉倉權利金也應為 0
+        const activeCallQty = callQty > 0 ? callQty : 0;
+        
+        const grossCallPremium = activeCallQty * callPrem * 100;
+        const extraPremiums = (roll1Prem + roll2Prem + roll3Prem) * activeCallQty * 100; // 修正：改用 activeCallQty
 
-        const totalGrossPremiums = grossPremiums + extraPremiums;
+        const totalGrossPremiums = grossPutPremium + grossCallPremium + extraPremiums;
         
-        // Calculate Total Close Costs
+        // 2. 計算平倉成本 (Close Costs)
         let totalCloseCost = 0;
-        let closeDaysTotal = 0;
-        
-        // Track which calls are closed to adjust days calculation
         let closedCalls = {
             initial: false,
             roll1: false,
@@ -926,121 +929,96 @@
         };
         
         if (close1Which && close1Cost > 0) {
-            totalCloseCost += close1Cost * callQty * 100;
+            totalCloseCost += close1Cost * activeCallQty * 100; // 修正：確保使用 Call 的數量
             closedCalls[close1Which] = true;
-            closeDaysTotal += close1Days;
         }
         if (close2Which && close2Cost > 0) {
-            totalCloseCost += close2Cost * callQty * 100;
+            totalCloseCost += close2Cost * activeCallQty * 100;
             closedCalls[close2Which] = true;
-            closeDaysTotal += close2Days;
         }
         if (close3Which && close3Cost > 0) {
-            totalCloseCost += close3Cost * callQty * 100;
+            totalCloseCost += close3Cost * activeCallQty * 100;
             closedCalls[close3Which] = true;
-            closeDaysTotal += close3Days;
         }
         
-        // Net Premium = Gross - Close Costs
+        // 淨權利金
         const netPremiums = totalGrossPremiums - totalCloseCost;
         
+        // 3. 確定最終股價
         let finalStockPrice = 0;
+        // 如果被 Call 走，價格鎖定在最終履約價；否則為當前市價
         if (isCalledAway) {
-            finalStockPrice = effectiveCallStrike; // Use Effective Strike!
+            finalStockPrice = effectiveCallStrike; 
         } else {
             finalStockPrice = userCurrentPrice;
         }
 
+        // 4. 計算股票價差盈虧 (Stock P&L)
+        // 修正邏輯：只要接到股票 (Put 被指派)，就會有股票損益，這與是否賣出 Call 無關。
+        // 持有股數基礎 = Put 的張數 * 100
         let stockPnL = 0;
-        // Logic: Assuming Put was assigned, Cost Basis = Put Strike
-        if (callQty > 0) {
-             if (isCalledAway) {
-                // Sold at Effective Strike
-                stockPnL = (effectiveCallStrike - putStrike) * callQty * 100; 
-            } else {
-                // Holding
-                stockPnL = (userCurrentPrice - putStrike) * putQty * 100;
-            }
+        const sharesOwned = putQty * 100;
+
+        if (sharesOwned > 0) {
+             // 成本基礎 (Cost Basis) 為 Put 的履約價
+            stockPnL = (finalStockPrice - putStrike) * sharesOwned;
         }
 
+        // 5. 總盈虧
         const wheelTotalProfit = netPremiums + stockPnL + dividends;
         
-        // Breakeven & Safety (use net premiums for accurate calculation)
-        const premPerShare = (putQty > 0) ? (netPremiums / (putQty * 100)) : 0;
-        const divPerShare = (putQty > 0) ? (dividends / (putQty * 100)) : 0;
-        const breakeven = putStrike - premPerShare - divPerShare;
+        // 6. 損益平衡點與安全邊際
+        // 每股獲得的淨權利金 + 股利
+        const totalCreditPerShare = (sharesOwned > 0) ? ((netPremiums + dividends) / sharesOwned) : 0;
+        const breakeven = putStrike - totalCreditPerShare;
+        // 修正安全邊際計算：避免除以 0
         const safetyMargin = (putStrike > 0) ? ((putStrike - breakeven) / putStrike) * 100 : 0;
 
-        // Calculate Total Days
-        // For closed positions, use the close days instead of original expiration days
+        // 7. 計算總天數 (保持您原本的邏輯，但增加防呆)
         let totalDays = putDays;
         
-        // Add call days - but if closed, use close days instead
-        if (closedCalls.initial && close1Which === 'initial') {
-            totalDays += close1Days;
-        } else if (closedCalls.initial && close2Which === 'initial') {
-            totalDays += close2Days;
-        } else if (closedCalls.initial && close3Which === 'initial') {
-            totalDays += close3Days;
-        } else {
-            totalDays += callDays;
-        }
+        // Call Days logic...
+        if (closedCalls.initial && close1Which === 'initial') totalDays += close1Days;
+        else if (closedCalls.initial && close2Which === 'initial') totalDays += close2Days;
+        else if (closedCalls.initial && close3Which === 'initial') totalDays += close3Days;
+        else totalDays += callDays;
         
-        // Add roll days - but if closed, use close days instead
-        if (roll1Prem > 0 || roll1Strike > 0) {
-            if (closedCalls.roll1) {
-                // Days already counted in close
-            } else {
-                totalDays += roll1Days;
-            }
-        }
-        if (roll2Prem > 0 || roll2Strike > 0) {
-            if (closedCalls.roll2) {
-                // Days already counted in close
-            } else {
-                totalDays += roll2Days;
-            }
-        }
-        if (roll3Prem > 0 || roll3Strike > 0) {
-            if (closedCalls.roll3) {
-                // Days already counted in close
-            } else {
-                totalDays += roll3Days;
-            }
-        }
+        // Roll Days logic...
+        // 這裡邏輯稍微複雜，假設轉倉天數是累加的
+        const rolls = [
+            { has: roll1Prem !== 0 || roll1Strike > 0, closed: closedCalls.roll1, days: roll1Days },
+            { has: roll2Prem !== 0 || roll2Strike > 0, closed: closedCalls.roll2, days: roll2Days },
+            { has: roll3Prem !== 0 || roll3Strike > 0, closed: closedCalls.roll3, days: roll3Days }
+        ];
+
+        // 簡單化處理：如果該次轉倉被平倉，使用平倉輸入的天數；否則使用轉倉輸入的天數
+        // 注意：這部分的 UI 設計可能會讓使用者混淆天數是否包含之前的，這裡假設是「額外增加的天數」
+        if (rolls[0].has && !rolls[0].closed) totalDays += rolls[0].days;
+        if (rolls[1].has && !rolls[1].closed) totalDays += rolls[1].days;
+        if (rolls[2].has && !rolls[2].closed) totalDays += rolls[2].days;
         
-        // Add close days for non-initial closes
-        if (close1Which && close1Which !== 'initial' && close1Cost > 0) {
-            totalDays += close1Days;
-        }
-        if (close2Which && close2Which !== 'initial' && close2Cost > 0) {
-            totalDays += close2Days;
-        }
-        if (close3Which && close3Which !== 'initial' && close3Cost > 0) {
-            totalDays += close3Days;
-        }
+        // 處理非初始的平倉天數 (如果有記錄平倉但不是針對 Initial Call)
+        if (close1Which && close1Which !== 'initial' && close1Cost > 0) totalDays += close1Days;
+        if (close2Which && close2Which !== 'initial' && close2Cost > 0) totalDays += close2Days;
+        if (close3Which && close3Which !== 'initial' && close3Cost > 0) totalDays += close3Days;
         
         const roi = (initialCapital > 0) ? (wheelTotalProfit / initialCapital) * 100 : 0;
         const annualized = (totalDays > 0) ? (roi / totalDays) * 365 : 0;
 
         // --- Logic: Benchmark (Buy & Hold) ---
-        // Scenario: Bought shares at Put Strike on Day 1
-        const bnhProfit = ((finalStockPrice - putStrike) * putQty * 100) + dividends;
+        const bnhProfit = ((finalStockPrice - putStrike) * sharesOwned) + dividends;
         const wheelOutperformed = wheelTotalProfit > bnhProfit;
         const diff = wheelTotalProfit - bnhProfit;
 
-        // --- Render ---
+        // --- Render (保持不變) ---
         document.getElementById('resultSection').style.display = 'block';
 
-        // Top Stats
         document.getElementById('resBreakeven').innerText = `$${breakeven.toFixed(2)}`;
         document.getElementById('resSafety').innerText = `${safetyMargin.toFixed(2)}%`;
         document.getElementById('resFinalStrike').innerText = `$${effectiveCallStrike.toFixed(2)}`;
         
-        // Breakdown
         document.getElementById('resPremium').innerText = `+$${totalGrossPremiums.toFixed(2)}`;
         
-        // Close Cost
         const closeCostEl = document.getElementById('resCloseCost');
         if (totalCloseCost > 0) {
             closeCostEl.innerText = `-$${totalCloseCost.toFixed(2)}`;
@@ -1050,7 +1028,6 @@
             closeCostEl.className = '';
         }
         
-        // Net Premium
         const netPremEl = document.getElementById('resNetPremium');
         netPremEl.innerText = (netPremiums >= 0 ? '+' : '') + `$${netPremiums.toFixed(2)}`;
         netPremEl.className = (netPremiums >= 0) ? 'profit' : 'loss';
@@ -1061,12 +1038,10 @@
         stockPnLEl.innerText = (stockPnL >= 0 ? '+' : '') + `$${stockPnL.toFixed(2)}`;
         stockPnLEl.className = (stockPnL >= 0) ? 'profit' : 'loss';
 
-        // Grand Total
         const totalPnLEl = document.getElementById('resTotalPnL');
         totalPnLEl.innerText = (wheelTotalProfit >= 0 ? '+' : '') + `$${wheelTotalProfit.toFixed(2)}`;
         totalPnLEl.className = (wheelTotalProfit >= 0) ? 'profit result-row total' : 'loss result-row total';
 
-        // ROI
         document.getElementById('resTotalDays').innerText = totalDays;
         
         const roiEl = document.getElementById('resROI');
@@ -1075,7 +1050,6 @@
 
         document.getElementById('resAnnualized').innerText = `${annualized.toFixed(2)}%`;
 
-        // Benchmark Render
         const bnhEl = document.getElementById('resBnH');
         bnhEl.innerText = (bnhProfit >= 0 ? '+' : '') + `$${bnhProfit.toFixed(2)}`;
         bnhEl.className = (bnhProfit >= 0) ? 'profit' : 'loss';
@@ -1099,6 +1073,7 @@
 </body>
 
 </html>
+
 
 
 
