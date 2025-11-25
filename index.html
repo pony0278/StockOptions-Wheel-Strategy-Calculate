@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wheel Strategy Pro (With Repair)</title>
+    <title>Wheel Strategy Pro (Flexible)</title>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -93,14 +93,6 @@
             gap: 8px;
         }
         
-        /* 針對維修區塊的特殊標題樣式 */
-        .section-subtitle {
-            font-size: 0.95rem;
-            color: var(--info-color);
-            margin-bottom: 10px;
-            font-weight: 500;
-        }
-
         .grid-row {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
@@ -108,9 +100,9 @@
             margin-bottom: 15px;
         }
         
-        /* 讓額外操作的行緊湊一點 */
+        /* Compact row for extra calls */
         .grid-row.compact {
-            grid-template-columns: 100px 1fr 1fr;
+            grid-template-columns: 80px 1fr 1fr 1fr;
             align-items: end;
             gap: 10px;
             margin-bottom: 10px;
@@ -118,9 +110,21 @@
             padding: 10px;
             border-radius: 6px;
         }
+        
+        @media (max-width: 600px) {
+            .grid-row.compact {
+                grid-template-columns: 1fr 1fr;
+            }
+            .grid-row.compact > div:first-child {
+                grid-column: span 2;
+                padding-bottom: 5px;
+                border-bottom: 1px solid var(--divider-color);
+                margin-bottom: 5px;
+            }
+        }
 
         .form-group { display: flex; flex-direction: column; }
-        label { font-size: 0.9rem; margin-bottom: 5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+        label { font-size: 0.85rem; margin-bottom: 5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         
         input, select {
             padding: 10px;
@@ -210,7 +214,7 @@
 
 <div class="container">
     <div class="header-row">
-        <h1 data-i18n="appTitle">Wheel Strategy Calculate</h1>
+        <h1 data-i18n="appTitle">Wheel Strategy Pro</h1>
         <div class="controls">
             <button class="btn-toggle" onclick="toggleTheme()" id="themeBtn">🌞 Light</button>
             <button class="btn-toggle" onclick="toggleLang()" id="langBtn">中文</button>
@@ -251,7 +255,7 @@
     
     <div class="grid-row">
         <div class="form-group">
-            <label data-i18n="lblCallStrike">Call Strike Price</label>
+            <label data-i18n="lblCallStrike">Initial Call Strike</label>
             <input type="number" id="callStrike" class="save-input" value="55" step="0.1">
         </div>
         <div class="form-group">
@@ -276,13 +280,17 @@
 
     <div class="divider"></div>
 
-    <div class="section-title" data-i18n="secAdjust">3. Additional Rolls / Adjustments (Optional)</div>
-    <p class="note" style="margin-bottom: 15px;" data-i18n="noteAdjust">Use this to lower cost basis (Repair Strategy). Assumes same contract quantity.</p>
+    <div class="section-title" data-i18n="secAdjust">3. Additional Calls / Rolling</div>
+    <p class="note" style="margin-bottom: 15px;" data-i18n="noteAdjust">If New Trade: Enter full Premium. If Rolling: Enter Net Credit (New - Old).</p>
 
     <div class="grid-row compact">
-        <div style="font-weight: bold; color: var(--muted-text); padding-bottom: 12px;">Roll #1</div>
+        <div style="font-weight: bold; color: var(--muted-text); padding-bottom: 12px;">#1</div>
         <div class="form-group">
-            <label data-i18n="lblPrem">Premium</label>
+            <label data-i18n="lblNewStrike">Strike (Opt)</label>
+            <input type="number" id="roll1Strike" class="save-input" placeholder="e.g. 54" step="0.1">
+        </div>
+        <div class="form-group">
+            <label data-i18n="lblNetCredit">Premium / Credit</label>
             <input type="number" id="roll1Prem" class="save-input" placeholder="0.00" step="0.01">
         </div>
         <div class="form-group">
@@ -291,9 +299,13 @@
         </div>
     </div>
     <div class="grid-row compact">
-        <div style="font-weight: bold; color: var(--muted-text); padding-bottom: 12px;">Roll #2</div>
+        <div style="font-weight: bold; color: var(--muted-text); padding-bottom: 12px;">#2</div>
         <div class="form-group">
-            <label data-i18n="lblPrem">Premium</label>
+            <label data-i18n="lblNewStrike">Strike (Opt)</label>
+            <input type="number" id="roll2Strike" class="save-input" placeholder="e.g. 53" step="0.1">
+        </div>
+        <div class="form-group">
+            <label data-i18n="lblNetCredit">Premium / Credit</label>
             <input type="number" id="roll2Prem" class="save-input" placeholder="0.00" step="0.01">
         </div>
         <div class="form-group">
@@ -302,9 +314,13 @@
         </div>
     </div>
     <div class="grid-row compact">
-        <div style="font-weight: bold; color: var(--muted-text); padding-bottom: 12px;">Roll #3</div>
+        <div style="font-weight: bold; color: var(--muted-text); padding-bottom: 12px;">#3</div>
         <div class="form-group">
-            <label data-i18n="lblPrem">Premium</label>
+            <label data-i18n="lblNewStrike">Strike (Opt)</label>
+            <input type="number" id="roll3Strike" class="save-input" placeholder="e.g. 52" step="0.1">
+        </div>
+        <div class="form-group">
+            <label data-i18n="lblNetCredit">Premium / Credit</label>
             <input type="number" id="roll3Prem" class="save-input" placeholder="0.00" step="0.01">
         </div>
         <div class="form-group">
@@ -345,6 +361,11 @@
         </div>
 
         <div class="divider" style="margin: 15px 0;"></div>
+
+        <div class="result-row">
+            <span data-i18n="resFinalStrike">Effective Sell Strike:</span>
+            <span id="resFinalStrike" style="font-weight: bold; color: var(--info-color);">$0</span>
+        </div>
 
         <div class="result-row">
             <span data-i18n="resPremium">Total Premium (All):</span>
@@ -410,14 +431,15 @@
             lblPutDays: "Put Days",
             secCall: "2. Assignment & Covered Call",
             noteAssigned: "* Only fill if assigned.",
-            lblCallStrike: "Call Strike",
+            lblCallStrike: "Initial Call Strike",
             lblCallQty: "Call Contracts (x100)",
             lblCallPrem: "Call Premium",
             lblCallDays: "Call Days",
             lblDividend: "Total Dividends ($)",
-            secAdjust: "3. Additional Rolls / Repair (Optional)",
-            noteAdjust: "Track extra calls sold to lower your breakeven (Avg Down).",
-            lblPrem: "Premium",
+            secAdjust: "3. Additional Calls / Rolls",
+            noteAdjust: "If New Trade: Enter full Premium. If Rolling: Enter Net Credit (New - Old).",
+            lblNewStrike: "Strike (Opt)",
+            lblNetCredit: "Premium / Credit",
             lblDays: "Days",
             secFinal: "4. Settlement",
             lblIsCalled: "Stock Called Away?",
@@ -427,6 +449,7 @@
             btnCalc: "Analyze Performance",
             resBreakeven: "Breakeven Price (Cost Basis):",
             resSafety: "Downside Protection:",
+            resFinalStrike: "Effective Sell Strike:",
             resPremium: "Total Premiums (All):",
             resDividend: "Dividends:",
             resStockPnL: "Stock Value Change:",
@@ -454,14 +477,15 @@
             lblPutDays: "Put 持有天數",
             secCall: "2. 行權與 Covered Call",
             noteAssigned: "* 若 Put 被行權才需填寫",
-            lblCallStrike: "Call 履約價",
+            lblCallStrike: "初始 Call 履約價",
             lblCallQty: "Call 張數",
             lblCallPrem: "Call 權利金",
             lblCallDays: "Call 持有天數",
             lblDividend: "期間領取股利 ($)",
-            secAdjust: "3. 轉倉 / 救援加賣 (選填)",
-            noteAdjust: "輸入額外賣出的 Call (Rolling) 來降低損益平衡點。",
-            lblPrem: "權利金",
+            secAdjust: "3. 額外賣出 Call / 轉倉",
+            noteAdjust: "若為新交易：填全額權利金。若為轉倉：填淨權利金 (新 - 舊)。",
+            lblNewStrike: "履約價 (選填)",
+            lblNetCredit: "權利金 / 淨額",
             lblDays: "天數",
             secFinal: "4. 最終結算",
             lblIsCalled: "股票被 Call 走 (賣出)?",
@@ -471,6 +495,7 @@
             btnCalc: "分析績效",
             resBreakeven: "損益平衡點 (持有成本):",
             resSafety: "下跌緩衝 (Safety):",
+            resFinalStrike: "最終履約賣價:",
             resPremium: "總權利金收入:",
             resDividend: "股利收入:",
             resStockPnL: "股票價差損益:",
@@ -559,29 +584,41 @@
         const dividends = parseFloat(document.getElementById('dividends').value) || 0;
 
         // Extra Rolls
+        const roll1Strike = parseFloat(document.getElementById('roll1Strike').value) || 0;
         const roll1Prem = parseFloat(document.getElementById('roll1Prem').value) || 0;
         const roll1Days = parseFloat(document.getElementById('roll1Days').value) || 0;
+        
+        const roll2Strike = parseFloat(document.getElementById('roll2Strike').value) || 0;
         const roll2Prem = parseFloat(document.getElementById('roll2Prem').value) || 0;
         const roll2Days = parseFloat(document.getElementById('roll2Days').value) || 0;
+        
+        const roll3Strike = parseFloat(document.getElementById('roll3Strike').value) || 0;
         const roll3Prem = parseFloat(document.getElementById('roll3Prem').value) || 0;
         const roll3Days = parseFloat(document.getElementById('roll3Days').value) || 0;
         
         const isCalledAway = document.getElementById('isCalledAway').value === 'yes';
         const userCurrentPrice = parseFloat(document.getElementById('currentPrice').value) || 0;
 
+        // --- Logic: Determine Effective Call Strike ---
+        // Logic: The LAST entered roll strike is the current one.
+        let effectiveCallStrike = callStrike;
+        if (roll1Strike > 0) effectiveCallStrike = roll1Strike;
+        if (roll2Strike > 0) effectiveCallStrike = roll2Strike;
+        if (roll3Strike > 0) effectiveCallStrike = roll3Strike;
+
+
         // --- Logic: The Wheel ---
         // Basic Premiums
         let basePremiums = (putQty * putPrem * 100) + (callQty * callPrem * 100);
         
-        // Extra Rolls Premium (Assuming same quantity as putQty, i.e. rolling the position)
-        // If user is reducing qty, this is an estimate. But for standard wheel, qty usually matches.
+        // Extra Rolls Premium
         let extraPremiums = (roll1Prem + roll2Prem + roll3Prem) * putQty * 100;
 
         const totalPremiums = basePremiums + extraPremiums;
         
         let finalStockPrice = 0;
         if (isCalledAway) {
-            finalStockPrice = callStrike;
+            finalStockPrice = effectiveCallStrike; // Use Effective Strike!
         } else {
             finalStockPrice = userCurrentPrice;
         }
@@ -590,8 +627,8 @@
         // Logic: Assuming Put was assigned, Cost Basis = Put Strike
         if (callQty > 0) {
              if (isCalledAway) {
-                // Sold at Call Strike
-                stockPnL = (callStrike - putStrike) * callQty * 100; 
+                // Sold at Effective Strike
+                stockPnL = (effectiveCallStrike - putStrike) * callQty * 100; 
             } else {
                 // Holding
                 stockPnL = (userCurrentPrice - putStrike) * putQty * 100;
@@ -623,6 +660,7 @@
         // Top Stats
         document.getElementById('resBreakeven').innerText = `$${breakeven.toFixed(2)}`;
         document.getElementById('resSafety').innerText = `${safetyMargin.toFixed(2)}%`;
+        document.getElementById('resFinalStrike').innerText = `$${effectiveCallStrike.toFixed(2)}`;
         
         // Breakdown
         document.getElementById('resPremium').innerText = `+$${totalPremiums.toFixed(2)}`;
