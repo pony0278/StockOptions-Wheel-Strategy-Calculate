@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wheel Strategy Pro (Flexible)</title>
+    <title>Wheel Strategy Pro</title>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -66,6 +66,16 @@
             margin-bottom: 20px;
             border-bottom: 2px solid var(--divider-color);
             padding-bottom: 15px;
+        }
+        pre.ascii-box {
+            background-color: var(--input-bg);
+            padding: 10px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--input-border);
+            overflow-x: auto;
+            font-size: 0.8rem;
+            line-height: 1.4;
+            white-space: pre;
         }
 
         h1 { margin: 0; font-size: 1.5rem; }
@@ -214,11 +224,98 @@
 
 <div class="container">
     <div class="header-row">
-        <h1 data-i18n="appTitle">Wheel Strategy Pro</h1>
+        <h1 data-i18n="appTitle">Wheel Strategy Calculate</h1>
         <div class="controls">
             <button class="btn-toggle" onclick="toggleTheme()" id="themeBtn">🌞 Light</button>
+            <button class="btn-toggle" onclick="toggleAsciiHelp()" id="asciiBtn" data-i18n="btnAscii">
+               Strategy Guide
+            </button>
             <button class="btn-toggle" onclick="toggleLang()" id="langBtn">中文</button>
         </div>
+    </div>
+        <div id="asciiHelp" class="result-card" style="display:none; margin-bottom: 15px;">
+        <div class="section-title" style="margin-top:0;" data-i18n="asciiTitle">
+            Wheel Strategy Guide
+        </div>
+        <p class="note" data-i18n="asciiIntro">
+            This diagram explains the sell put → assignment → covered call fund cycle.
+        </p>
+
+        <!-- 英文版 ASCII -->
+        <pre id="asciiEn" class="ascii-box">
+            ┌────────────────────────────────────┐
+            │ Step 1: Sell Cash-Secured Put      │
+            │  • Collect premium                 │
+            │  • Set potential entry price       │
+            └────────────────────────────────────┘
+                         |
+                         v
+            ┌────────────────────────────────────┐
+            │ Step 2: Market Movement             │
+            └────────────────────────────────────┘
+               /                          \
+  Price ≥ strike (good/ok)          Price < strike (dip)
+  ----------------------------      ------------------------
+  Put expires worthless            Put assigned → you buy shares
+  You keep premium                 at strike - premium
+               \                          /
+                \                        /
+                 v                      v
+     ┌─────────────────┐     ┌──────────────────────────┐
+     │ Hold no shares  │     │ Step 3: Now you own stock │
+     │ (profit = prem) │     └──────────────────────────┘
+     └─────────────────┘                |
+                                        v
+             Market strong                        Market weak
+             ---------------------                ---------------------
+             Hold shares → growth                 Sell covered call
+             (no action needed)                   → collect premium
+                                        |
+                                        v
+                     ┌─────────────────────────────────────┐
+                     │ Step 4: Fund Cycle Continues        │
+                     │  • If called away → return to Step 1│
+                     │  • If not called → sell call again   │
+                     └─────────────────────────────────────┘
+        </pre>
+
+        <!-- 中文版 ASCII -->
+        <pre id="asciiZh" class="ascii-box" style="display:none;">
+            ┌────────────────────────────────────┐
+            │ 步驟 1：賣出現金擔保賣權（Put）      │
+            │  • 收取權利金                       │
+            │  • 設定潛在進場價格                 │
+            └────────────────────────────────────┘
+                         |
+                         v
+            ┌────────────────────────────────────┐
+            │ 步驟 2：等待市場波動                 │
+            └────────────────────────────────────┘
+               /                          \
+  價格 ≥ 履約價（行情不錯）          價格 < 履約價（行情轉弱）
+  ----------------------------      ------------------------
+  賣權到期變成無價值               賣權被指派 → 你買入股票
+  你保留全部權利金                 成本 ≈ 履約價 - 權利金
+               \                          /
+                \                        /
+                 v                      v
+     ┌─────────────────┐     ┌──────────────────────────┐
+     │ 未持有股票       │     │ 步驟 3：現在你持有股票      │
+     │（獲利 = 權利金） │     └──────────────────────────┘
+     └─────────────────┘                |
+                                        v
+             行情轉強                             行情轉弱
+             ---------------------                ---------------------
+             持股等待上漲                         賣出買權（Covered Call）
+             （不用多做事）                      → 收取權利金
+                                        |
+                                        v
+                     ┌─────────────────────────────────────┐
+                     │ 步驟 4：資金循環持續進行             │
+                     │  • 若被 Call 走 → 回到步驟 1         │
+                     │  • 若未被 Call 走 → 繼續賣出買權     │
+                     └─────────────────────────────────────┘
+        </pre>
     </div>
 
     <div class="section-title" data-i18n="secPut">1. Capital & Sell Put</div>
@@ -465,7 +562,11 @@
             msgWin: "Excellent! The Wheel generated more cashflow than simply holding the stock.",
             msgLose: "Stock rallied too fast. You made profit, but holding would have made more (Opportunity Cost).",
             themeBtn: "🌞 Light",
-            langBtn: "中文"
+            langBtn: "中文",
+            btnAscii: "Wheel Strategy Help",
+            btnAsciiClose: "Hide",
+            asciiTitle: "Wheel Strategy ASCII Guide",
+            asciiIntro: "This diagram explains the sell put → assignment → covered call fund cycle.",
         },
         zh: {
             appTitle: "Wheel 策略旗艦計算器",
@@ -511,7 +612,11 @@
             msgWin: "太棒了！此策略透過權利金創造了比單純持股更高的現金流。",
             msgLose: "股價漲太快了。雖然你有賺錢，但如果當初直接買進並持有，利潤會更高 (機會成本)。",
             themeBtn: "🌙 Dark",
-            langBtn: "English"
+            langBtn: "English",
+            btnAscii: "輪動策略 說明",
+            btnAsciiClose: "收起",
+            asciiTitle: "輪動策略 ASCII 流程圖說明",
+            asciiIntro: "下圖用簡化流程圖說明：Sell Put → 行權取得股票 → 賣出 Covered Call 的資金循環。",
         }
     };
 
@@ -560,6 +665,24 @@
         document.getElementById('langBtn').innerText = i18n[currentLang].langBtn;
         const currentTheme = document.documentElement.getAttribute('data-theme');
         updateThemeButtonText(currentTheme);
+        const asciiBox = document.getElementById('asciiHelp');
+        const asciiBtn = document.getElementById('asciiBtn');
+        if (asciiBtn && asciiBox) {
+            const isVisible = asciiBox.style.display === 'block';
+            asciiBtn.innerText = isVisible ? t.btnAsciiClose : t.btnAscii;
+        }
+
+        const asciiEn = document.getElementById('asciiEn');
+        const asciiZh = document.getElementById('asciiZh');
+        if (asciiEn && asciiZh) {
+            if (currentLang === 'en') {
+                asciiEn.style.display = 'block';
+                asciiZh.style.display = 'none';
+            } else {
+                asciiEn.style.display = 'none';
+                asciiZh.style.display = 'block';
+            }
+        }
     }
 
     function togglePriceInput() {
@@ -567,6 +690,17 @@
         const group = document.getElementById('finalPriceGroup');
         group.style.display = (val === 'no') ? 'flex' : 'none';
     }
+    function toggleAsciiHelp() {
+        const box = document.getElementById('asciiHelp');
+        const btn = document.getElementById('asciiBtn');
+        const isHidden = (box.style.display === 'none' || box.style.display === '');
+
+        box.style.display = isHidden ? 'block' : 'none';
+
+        const t = i18n[currentLang];
+        btn.innerText = isHidden ? t.btnAsciiClose : t.btnAscii;
+    }
+
 
     function calculate() {
         // --- Inputs ---
