@@ -20,6 +20,7 @@
             --divider-color: #334155;
             --muted-text: #94a3b8;
             --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+            --orange-color: #fb923c;
         }
 
         [data-theme="light"] {
@@ -37,6 +38,7 @@
             --divider-color: #e2e8f0;
             --muted-text: #64748b;
             --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --orange-color: #ea580c;
         }
 
         body {
@@ -80,7 +82,7 @@
 
         h1 { margin: 0; font-size: 1.5rem; }
 
-        .controls { display: flex; gap: 10px; }
+        .controls { display: flex; gap: 10px; flex-wrap: wrap; }
         .btn-toggle {
             background: var(--input-bg);
             color: var(--text-color);
@@ -121,11 +123,32 @@
             border-radius: 6px;
         }
         
+        /* Compact row for close call entries */
+        .grid-row.compact-close {
+            grid-template-columns: 80px 1fr 1fr 1fr 1fr;
+            align-items: end;
+            gap: 10px;
+            margin-bottom: 10px;
+            background: rgba(251, 146, 60, 0.08);
+            padding: 10px;
+            border-radius: 6px;
+            border-left: 3px solid var(--orange-color);
+        }
+        
         @media (max-width: 600px) {
             .grid-row.compact {
                 grid-template-columns: 1fr 1fr;
             }
             .grid-row.compact > div:first-child {
+                grid-column: span 2;
+                padding-bottom: 5px;
+                border-bottom: 1px solid var(--divider-color);
+                margin-bottom: 5px;
+            }
+            .grid-row.compact-close {
+                grid-template-columns: 1fr 1fr;
+            }
+            .grid-row.compact-close > div:first-child {
                 grid-column: span 2;
                 padding-bottom: 5px;
                 border-bottom: 1px solid var(--divider-color);
@@ -202,6 +225,10 @@
             font-weight: bold;
         }
         
+        .close-cost {
+            color: var(--orange-color);
+        }
+        
         .benchmark-box {
             margin-top: 20px;
             padding: 15px;
@@ -216,6 +243,19 @@
             margin-bottom: 5px;
             text-transform: uppercase;
             letter-spacing: 1px;
+        }
+        
+        .close-section {
+            background: rgba(251, 146, 60, 0.05);
+            border: 1px solid rgba(251, 146, 60, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+        
+        .close-section .section-title {
+            color: var(--orange-color);
+            margin-top: 0;
         }
 
     </style>
@@ -261,9 +301,9 @@
                \                          /
                 \                        /
                  v                      v
-     ┌─────────────────┐     ┌──────────────────────────┐
+     ┌─────────────────┐     ┌──────────────────────────────────┐
      │ Hold no shares  │     │ Step 3: Now you own stock │
-     │ (profit = prem) │     └──────────────────────────┘
+     │ (profit = prem) │     └──────────────────────────────────┘
      └─────────────────┘                |
                                         v
              Market strong                        Market weak
@@ -276,6 +316,7 @@
                      │ Step 4: Fund Cycle Continues        │
                      │  • If called away → return to Step 1│
                      │  • If not called → sell call again   │
+                     │  • Close call early → pay to exit   │
                      └─────────────────────────────────────┘
         </pre>
 
@@ -299,9 +340,9 @@
                \                          /
                 \                        /
                  v                      v
-     ┌─────────────────┐     ┌──────────────────────────┐
+     ┌─────────────────┐     ┌──────────────────────────────┐
      │ 未持有股票       │     │ 步驟 3：現在你持有股票      │
-     │（獲利 = 權利金） │     └──────────────────────────┘
+     │（獲利 = 權利金） │     └──────────────────────────────┘
      └─────────────────┘                |
                                         v
              行情轉強                             行情轉弱
@@ -314,6 +355,7 @@
                      │ 步驟 4：資金循環持續進行             │
                      │  • 若被 Call 走 → 回到步驟 1         │
                      │  • 若未被 Call 走 → 繼續賣出買權     │
+                     │  • 提前平倉 → 付費關閉部位           │
                      └─────────────────────────────────────┘
         </pre>
     </div>
@@ -426,10 +468,83 @@
         </div>
     </div>
 
+    <div class="divider"></div>
+    
+    <!-- NEW SECTION: Close Sell Call -->
+    <div class="section-title" style="color: var(--orange-color);" data-i18n="secClose">4. Close Sell Call (Buy to Close)</div>
+    <p class="note" style="margin-bottom: 15px;" data-i18n="noteClose">If you bought back (closed) any call before expiration, enter the cost here. This reduces your net premium.</p>
+    
+    <div class="close-section">
+        <div class="grid-row compact-close">
+            <div style="font-weight: bold; color: var(--orange-color); padding-bottom: 12px;">Close #1</div>
+            <div class="form-group">
+                <label data-i18n="lblCloseWhich">Which Call?</label>
+                <select id="close1Which" class="save-input">
+                    <option value="" data-i18n="optSelectCall">-- Select --</option>
+                    <option value="initial" data-i18n="optInitialCall">Initial Call</option>
+                    <option value="roll1" data-i18n="optRoll1">Roll #1</option>
+                    <option value="roll2" data-i18n="optRoll2">Roll #2</option>
+                    <option value="roll3" data-i18n="optRoll3">Roll #3</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label data-i18n="lblCloseCost">Close Cost (per share)</label>
+                <input type="number" id="close1Cost" class="save-input" placeholder="0.00" step="0.01">
+            </div>
+            <div class="form-group">
+                <label data-i18n="lblCloseDays">Days Held</label>
+                <input type="number" id="close1Days" class="save-input" placeholder="0">
+            </div>
+        </div>
+        
+        <div class="grid-row compact-close">
+            <div style="font-weight: bold; color: var(--orange-color); padding-bottom: 12px;">Close #2</div>
+            <div class="form-group">
+                <label data-i18n="lblCloseWhich">Which Call?</label>
+                <select id="close2Which" class="save-input">
+                    <option value="" data-i18n="optSelectCall">-- Select --</option>
+                    <option value="initial" data-i18n="optInitialCall">Initial Call</option>
+                    <option value="roll1" data-i18n="optRoll1">Roll #1</option>
+                    <option value="roll2" data-i18n="optRoll2">Roll #2</option>
+                    <option value="roll3" data-i18n="optRoll3">Roll #3</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label data-i18n="lblCloseCost">Close Cost (per share)</label>
+                <input type="number" id="close2Cost" class="save-input" placeholder="0.00" step="0.01">
+            </div>
+            <div class="form-group">
+                <label data-i18n="lblCloseDays">Days Held</label>
+                <input type="number" id="close2Days" class="save-input" placeholder="0">
+            </div>
+        </div>
+        
+        <div class="grid-row compact-close">
+            <div style="font-weight: bold; color: var(--orange-color); padding-bottom: 12px;">Close #3</div>
+            <div class="form-group">
+                <label data-i18n="lblCloseWhich">Which Call?</label>
+                <select id="close3Which" class="save-input">
+                    <option value="" data-i18n="optSelectCall">-- Select --</option>
+                    <option value="initial" data-i18n="optInitialCall">Initial Call</option>
+                    <option value="roll1" data-i18n="optRoll1">Roll #1</option>
+                    <option value="roll2" data-i18n="optRoll2">Roll #2</option>
+                    <option value="roll3" data-i18n="optRoll3">Roll #3</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label data-i18n="lblCloseCost">Close Cost (per share)</label>
+                <input type="number" id="close3Cost" class="save-input" placeholder="0.00" step="0.01">
+            </div>
+            <div class="form-group">
+                <label data-i18n="lblCloseDays">Days Held</label>
+                <input type="number" id="close3Days" class="save-input" placeholder="0">
+            </div>
+        </div>
+    </div>
 
     <div class="divider"></div>
 
-    <div class="section-title" data-i18n="secFinal">4. Settlement</div>
+    <div class="section-title" data-i18n="secFinal">5. Settlement</div>
     <div class="grid-row">
         <div class="form-group">
             <label data-i18n="lblIsCalled">Is Stock Called Away?</label>
@@ -465,9 +580,20 @@
         </div>
 
         <div class="result-row">
-            <span data-i18n="resPremium">Total Premium (All):</span>
+            <span data-i18n="resPremium">Gross Premium (All):</span>
             <span id="resPremium" class="profit">+$0</span>
         </div>
+        
+        <div class="result-row">
+            <span data-i18n="resCloseCost">Close Cost (Buy Back):</span>
+            <span id="resCloseCost" class="close-cost">-$0</span>
+        </div>
+        
+        <div class="result-row">
+            <span data-i18n="resNetPremium">Net Premium:</span>
+            <span id="resNetPremium" class="profit">+$0</span>
+        </div>
+        
         <div class="result-row">
             <span data-i18n="resDividend">Dividends:</span>
             <span id="resDividend" class="profit">+$0</span>
@@ -538,7 +664,17 @@
             lblNewStrike: "Strike (Opt)",
             lblNetCredit: "Premium / Credit",
             lblDays: "Days",
-            secFinal: "4. Settlement",
+            secClose: "4. Close Sell Call (Buy to Close)",
+            noteClose: "If you bought back (closed) any call before expiration, enter the cost here. This reduces your net premium.",
+            lblCloseWhich: "Which Call?",
+            lblCloseCost: "Close Cost (per share)",
+            lblCloseDays: "Days Held",
+            optSelectCall: "-- Select --",
+            optInitialCall: "Initial Call",
+            optRoll1: "Roll #1",
+            optRoll2: "Roll #2",
+            optRoll3: "Roll #3",
+            secFinal: "5. Settlement",
             lblIsCalled: "Stock Called Away?",
             optYes: "Yes (Sold)",
             optNo: "No (Holding)",
@@ -547,7 +683,9 @@
             resBreakeven: "Breakeven Price (Cost Basis):",
             resSafety: "Downside Protection:",
             resFinalStrike: "Effective Sell Strike:",
-            resPremium: "Total Premiums (All):",
+            resPremium: "Gross Premium (All):",
+            resCloseCost: "Close Cost (Buy Back):",
+            resNetPremium: "Net Premium:",
             resDividend: "Dividends:",
             resStockPnL: "Stock Value Change:",
             resPnL: "Total Net Profit:",
@@ -588,7 +726,17 @@
             lblNewStrike: "履約價 (選填)",
             lblNetCredit: "權利金 / 淨額",
             lblDays: "天數",
-            secFinal: "4. 最終結算",
+            secClose: "4. 平倉 Sell Call (買回平倉)",
+            noteClose: "若在到期前買回（平倉）任何 Call，請在此輸入成本。這會減少您的淨權利金收入。",
+            lblCloseWhich: "平倉哪個 Call?",
+            lblCloseCost: "平倉成本 (每股)",
+            lblCloseDays: "持有天數",
+            optSelectCall: "-- 選擇 --",
+            optInitialCall: "初始 Call",
+            optRoll1: "轉倉 #1",
+            optRoll2: "轉倉 #2",
+            optRoll3: "轉倉 #3",
+            secFinal: "5. 最終結算",
             lblIsCalled: "股票被 Call 走 (賣出)?",
             optYes: "是 (股價 > 履約價，已賣出)",
             optNo: "否 (股價 < 履約價，持股中)",
@@ -597,7 +745,9 @@
             resBreakeven: "損益平衡點 (持有成本):",
             resSafety: "下跌緩衝 (Safety):",
             resFinalStrike: "最終履約賣價:",
-            resPremium: "總權利金收入:",
+            resPremium: "總權利金收入 (毛額):",
+            resCloseCost: "平倉成本 (買回):",
+            resNetPremium: "淨權利金收入:",
             resDividend: "股利收入:",
             resStockPnL: "股票價差損益:",
             resPnL: "Wheel 總淨利:",
@@ -730,6 +880,19 @@
         const roll3Prem = parseFloat(document.getElementById('roll3Prem').value) || 0;
         const roll3Days = parseFloat(document.getElementById('roll3Days').value) || 0;
         
+        // Close Call Inputs
+        const close1Which = document.getElementById('close1Which').value;
+        const close1Cost = parseFloat(document.getElementById('close1Cost').value) || 0;
+        const close1Days = parseFloat(document.getElementById('close1Days').value) || 0;
+        
+        const close2Which = document.getElementById('close2Which').value;
+        const close2Cost = parseFloat(document.getElementById('close2Cost').value) || 0;
+        const close2Days = parseFloat(document.getElementById('close2Days').value) || 0;
+        
+        const close3Which = document.getElementById('close3Which').value;
+        const close3Cost = parseFloat(document.getElementById('close3Cost').value) || 0;
+        const close3Days = parseFloat(document.getElementById('close3Days').value) || 0;
+        
         const isCalledAway = document.getElementById('isCalledAway').value === 'yes';
         const userCurrentPrice = parseFloat(document.getElementById('currentPrice').value) || 0;
 
@@ -742,13 +905,44 @@
 
 
         // --- Logic: The Wheel ---
-        // Basic Premiums
-        let basePremiums = (putQty * putPrem * 100) + (callQty * callPrem * 100);
+        // Gross Premiums (before any close costs)
+        let grossPremiums = (putQty * putPrem * 100) + (callQty * callPrem * 100);
         
         // Extra Rolls Premium
         let extraPremiums = (roll1Prem + roll2Prem + roll3Prem) * putQty * 100;
 
-        const totalPremiums = basePremiums + extraPremiums;
+        const totalGrossPremiums = grossPremiums + extraPremiums;
+        
+        // Calculate Total Close Costs
+        let totalCloseCost = 0;
+        let closeDaysTotal = 0;
+        
+        // Track which calls are closed to adjust days calculation
+        let closedCalls = {
+            initial: false,
+            roll1: false,
+            roll2: false,
+            roll3: false
+        };
+        
+        if (close1Which && close1Cost > 0) {
+            totalCloseCost += close1Cost * callQty * 100;
+            closedCalls[close1Which] = true;
+            closeDaysTotal += close1Days;
+        }
+        if (close2Which && close2Cost > 0) {
+            totalCloseCost += close2Cost * callQty * 100;
+            closedCalls[close2Which] = true;
+            closeDaysTotal += close2Days;
+        }
+        if (close3Which && close3Cost > 0) {
+            totalCloseCost += close3Cost * callQty * 100;
+            closedCalls[close3Which] = true;
+            closeDaysTotal += close3Days;
+        }
+        
+        // Net Premium = Gross - Close Costs
+        const netPremiums = totalGrossPremiums - totalCloseCost;
         
         let finalStockPrice = 0;
         if (isCalledAway) {
@@ -769,16 +963,63 @@
             }
         }
 
-        const wheelTotalProfit = totalPremiums + stockPnL + dividends;
+        const wheelTotalProfit = netPremiums + stockPnL + dividends;
         
-        // Breakeven & Safety
-        const premPerShare = (putQty > 0) ? (totalPremiums / (putQty * 100)) : 0;
+        // Breakeven & Safety (use net premiums for accurate calculation)
+        const premPerShare = (putQty > 0) ? (netPremiums / (putQty * 100)) : 0;
         const divPerShare = (putQty > 0) ? (dividends / (putQty * 100)) : 0;
         const breakeven = putStrike - premPerShare - divPerShare;
         const safetyMargin = (putStrike > 0) ? ((putStrike - breakeven) / putStrike) * 100 : 0;
 
-        // ROI
-        const totalDays = putDays + callDays + roll1Days + roll2Days + roll3Days;
+        // Calculate Total Days
+        // For closed positions, use the close days instead of original expiration days
+        let totalDays = putDays;
+        
+        // Add call days - but if closed, use close days instead
+        if (closedCalls.initial && close1Which === 'initial') {
+            totalDays += close1Days;
+        } else if (closedCalls.initial && close2Which === 'initial') {
+            totalDays += close2Days;
+        } else if (closedCalls.initial && close3Which === 'initial') {
+            totalDays += close3Days;
+        } else {
+            totalDays += callDays;
+        }
+        
+        // Add roll days - but if closed, use close days instead
+        if (roll1Prem > 0 || roll1Strike > 0) {
+            if (closedCalls.roll1) {
+                // Days already counted in close
+            } else {
+                totalDays += roll1Days;
+            }
+        }
+        if (roll2Prem > 0 || roll2Strike > 0) {
+            if (closedCalls.roll2) {
+                // Days already counted in close
+            } else {
+                totalDays += roll2Days;
+            }
+        }
+        if (roll3Prem > 0 || roll3Strike > 0) {
+            if (closedCalls.roll3) {
+                // Days already counted in close
+            } else {
+                totalDays += roll3Days;
+            }
+        }
+        
+        // Add close days for non-initial closes
+        if (close1Which && close1Which !== 'initial' && close1Cost > 0) {
+            totalDays += close1Days;
+        }
+        if (close2Which && close2Which !== 'initial' && close2Cost > 0) {
+            totalDays += close2Days;
+        }
+        if (close3Which && close3Which !== 'initial' && close3Cost > 0) {
+            totalDays += close3Days;
+        }
+        
         const roi = (initialCapital > 0) ? (wheelTotalProfit / initialCapital) * 100 : 0;
         const annualized = (totalDays > 0) ? (roi / totalDays) * 365 : 0;
 
@@ -797,7 +1038,23 @@
         document.getElementById('resFinalStrike').innerText = `$${effectiveCallStrike.toFixed(2)}`;
         
         // Breakdown
-        document.getElementById('resPremium').innerText = `+$${totalPremiums.toFixed(2)}`;
+        document.getElementById('resPremium').innerText = `+$${totalGrossPremiums.toFixed(2)}`;
+        
+        // Close Cost
+        const closeCostEl = document.getElementById('resCloseCost');
+        if (totalCloseCost > 0) {
+            closeCostEl.innerText = `-$${totalCloseCost.toFixed(2)}`;
+            closeCostEl.className = 'close-cost';
+        } else {
+            closeCostEl.innerText = `$0.00`;
+            closeCostEl.className = '';
+        }
+        
+        // Net Premium
+        const netPremEl = document.getElementById('resNetPremium');
+        netPremEl.innerText = (netPremiums >= 0 ? '+' : '') + `$${netPremiums.toFixed(2)}`;
+        netPremEl.className = (netPremiums >= 0) ? 'profit' : 'loss';
+        
         document.getElementById('resDividend').innerText = `+$${dividends.toFixed(2)}`;
         
         const stockPnLEl = document.getElementById('resStockPnL');
